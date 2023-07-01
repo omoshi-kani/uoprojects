@@ -1,0 +1,352 @@
+---
+title: "Project"
+author: "Elijah Reiland"
+date: "7/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+options(scipen=999)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r packages}
+library(pacman)
+p_load(here, magrittr, tidyverse, ggplot2, psych, stargazer, ggthemes, jtools, lmtest, sandwich, usethis)
+```
+
+
+
+```{r load data}
+mt_data <- read_csv(here('midterm_data.csv'))
+mt_data
+```
+
+
+#**1: Summarize and Describe Dataset**
+
+
+
+```{r data summary}
+describe(mt_data)
+summary(mt_data)
+```
+
+
+
+```{r totals}
+mt_data %>% 
+  select(nonwhite) %>%
+  filter(nonwhite > 0) %>%
+  dim()
+mt_data %>% 
+  select(owned) %>%
+  filter(owned > 0) %>%
+  dim()
+```
+
+
+  ##The proportion of non-white women is .29, or 991/3363.
+  
+  ##The proportion of white women is .71, or 2371/3363
+  
+  ##The proportion of those who own their home is .68, or 2297/3363
+  
+  ##The proportion of those who do not own their home is .32, or 1066/3363
+  
+  
+```{r Isolating Variables}
+mt_data %>% 
+  select(income, hours, age) %>%
+  describe()
+```
+  
+  
+  ##'Income' is highly skewed to the right
+  
+  ##'Hours' is slightly skewed to the left
+  
+  ##'Age' is somewhat skewed to the right
+  
+  
+  
+```{r Histogram of Hours}
+ggplot(
+  data = mt_data,
+  aes(x = hours)
+  )+
+  geom_histogram(bins = 75)+
+  labs(
+    x = "Wife Working Hours (yearly)",
+    y = "Count",
+    caption = "",
+    title = "Histogram of Hours"
+    )+
+  theme_minimal()
+```
+  
+  
+  
+
+```{r Histogram of Child5}
+ggplot(
+  data = mt_data,
+  aes(x = child5)
+  )+
+  geom_histogram(bins = 5)+
+  labs(
+    x = "Number of Children Under 5",
+    y = "Count",
+    caption = "",
+    title = "Children Age 5 or Younger"
+    )+
+  theme_minimal()
+```
+
+
+
+```{r Histogram of Age}
+ggplot(
+  data = mt_data,
+  aes(x = age)
+  )+
+  geom_histogram(bins = 40)+
+  labs(
+    x = "Wife's Age",
+    y = "Count",
+    caption = "",
+    title = "Histogram of Age of Wife"
+    )+
+  theme_minimal()
+```
+
+
+
+```{r Histogram of Education}
+ggplot(
+  data = mt_data,
+  aes(x = education)
+  )+
+  geom_histogram(bins = 20)+
+  labs(
+    x = "Wife's education",
+    y = "Count",
+    caption = "",
+    title = "Histogram of Education"
+    )+
+  theme_minimal()
+```
+
+
+
+
+```{r Age and Hours Plot}
+ggplot(mt_data, aes(x=age, y=hours)) + geom_point() + xlim(18, 65) +
+  labs(
+    x = "Age of Wife",
+    y = "Wife Working Hours (yearly)",
+    caption = "",
+    title = "Age of Wife vs. Hours Worked"
+    )+
+  theme_minimal() +
+  geom_point()
+```
+
+
+
+```{r Children 5 and Younger vs. Hours Worked Plot}
+ggplot(filter(mt_data),
+       aes(x=child5,
+           y=hours,
+           ))+
+  geom_point() +
+  labs(
+    x = "Number of Children for Ages 0 to 5",
+    y = "Hours Worked by Wife (yearly)",
+    caption = "",
+    title = "Children 5 and Younger vs. Hours Worked Plot"
+    )+
+  xlim(0, 4)
+```
+
+
+
+```{r Education and Hours Plot}
+ggplot(filter(mt_data),
+       aes(x=education,
+           y=hours,
+           ))+
+  geom_point() +
+  labs(
+    x = "Wife's education",
+    y = "Hours Worked by Wife (yearly)",
+    caption = "",
+    title = "Wife's Education vs. Hours Worked"
+    )+
+  xlim(0, 17)
+```
+
+
+
+  #
+
+
+##**2: Wife Working Hours and Education Regression**
+
+
+
+```{r regression hours ~ education}
+
+```
+
+
+
+  ##Education and hours are positively correlated. For a 1 unit change in education (or 1 additional year), there will be a 71.33 unit change in hours worked per year. This is true so long as income is held constant.
+
+
+
+#**3**
+
+
+```{r regression plot hours ~ education}
+ggplot(mt_data, aes(x=education, y=hours)) + 
+  geom_point()+
+  geom_smooth(method=lm, se = FALSE)
+```
+
+
+
+#**4**
+
+
+
+  ##Heteroskedasticity does not appear to be present. Viewing the graph, variance of residuals does not appear to increase as values increase. 
+
+
+
+#**5**
+ 
+ 
+  #Leaving out the "age" and "child5" variables creates an omitted variable bias. These variables both satisfy the requirements for OVB, being that they affect the outcome variable and correlate with the explanatory variable. 
+
+
+
+#**6**
+
+
+
+```{r regression hours ~ education + income}
+lm(
+  hours ~ education + income,
+  data = mt_data
+) %>% 
+  summ()
+```
+
+
+  ##Education and hours are positively correlated. For a 1 unit change in education (or 1 additional year), there will be a 85.03 unit change in hours worked per year. This is true so long as income is held constant.
+  
+  ##Income and hours are negatively correlated. For a 1 unit change in education (or 1 additional USD), there will be a < .00 unit change in hours worked per year. This is more significant than the coefficient alludes to, do to the fact that income has a very large range (in excess of 100000 USD/year)This is true so long as income is held constant.
+  
+  
+  
+  
+#**7**
+
+
+  ##The estimate for the effect of education on hours does change. The coefficient is higher on the second regression, while the standard error is smaller on the second regression. This makes sense because the first regression suffers from OVB. Th
+  
+  
+  
+#**8: Three Additional Models**  
+  
+  
+  
+```{r regression unrestricted}
+lm(hours ~ income + age + education + child5 + child13 + child17 + nonwhite + mortgage + unemp + owned,
+   data=mt_data) %>%
+summ()
+```
+  
+  
+  
+```{r regression log ~ log unrestricted}
+lm(log(1 + hours) ~ log(income) + log(age) + log(1 + child5) + log(1 + child13) + log(1 + child17) + log(1 + education) + log(1 + nonwhite) + log(1 + mortgage) + log(unemp) + log(1 + owned), data=mt_data) %>%
+summ()
+```
+
+
+
+```{r regression log unrestricted}
+lm(hours ~ log(income) + log(age) + log(1 + child5) + log(1 + child13) + log(1 + child17) + log(1 + education) + log(1 + nonwhite) + log(1 + mortgage) + log(unemp) + log(1 + owned), data=mt_data) %>%
+summ()
+```
+
+
+
+##This regression analysis shows all variables, except "owned" and "child17". They are determined to be statistically insignificant due to the fact that both p-values are greater than F-stat. 
+
+
+
+```{r regression log omit insignificant}
+lm(hours ~ log(income) + log(age) + log(1 + child5) + log(1 + child13) + log(1 + education) + log(1 + nonwhite) + log(1 + mortgage) + log(unemp), data=mt_data) %>%
+summ()
+```
+
+
+
+```{r regression log ~ log omit insignificant}
+lm(log(1 + hours) ~ log(income) + log(age) + log(1 + child5) + log(1 + child13) + log(1 + education) + log(1 + nonwhite) + log(1 + mortgage) + log(unemp), data=mt_data) %>%
+summ()
+```
+
+
+
+```{r regression log inc age educ}
+lm(hours ~ log(income) + log(age) + child5 + child13 + log(1 + education) + nonwhite + mortgage + unemp, data=mt_data) %>%
+summ()
+```
+
+
+
+```{r interaction variable (not submitted)}
+lm(hours ~ log(income) + log(1 + age * child5) + child13 + log(1 + education) + nonwhite + mortgage + unemp, data=mt_data) %>%
+summ()
+```
+
+
+
+
+```{r Breusch-Pagan Test}
+lmmod1 <-lm(hours ~ log(income) + log(age) + log(1 + education) + child5 + child13 + nonwhite + mortgage + unemp, data=mt_data)
+bptest(lmmod1)
+```
+
+
+  ##At confidence level .05, we do not reject the null hypothesis; according the this breusch-pagan test, heteroskedasticity is not present. 
+  
+  
+  
+```{r robustness}
+lmmod2 <- lm(hours ~ log(income) + log(age) + child5 + child13 + log(1 + education) + nonwhite + mortgage + unemp, data=mt_data)
+coeftest(lmmod2, vcov = vcovHC(lmmod2, type="HC1"))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
